@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '../users/enums/role.enum';
 import { AppUser } from '../users/interfaces/app-user.interface';
 import {
@@ -9,6 +14,13 @@ import {
 import { Requests } from './entities/requests.entity';
 import { RequestStatus } from './enums/request-status.enum';
 import { RequestsDao } from './requests.dao';
+
+/** Flujo permitido: pendiente -> en gestión -> resuelta; resuelta es final. */
+const ALLOWED_TRANSITIONS: Record<RequestStatus, RequestStatus[]> = {
+  [RequestStatus.PENDIENTE]: [RequestStatus.EN_GESTION],
+  [RequestStatus.EN_GESTION]: [RequestStatus.RESUELTA],
+  [RequestStatus.RESUELTA]: [],
+};
 
 /** Aplica las reglas de negocio y transforma entidades a respuestas de API. */
 @Injectable()
@@ -42,15 +54,17 @@ export class RequestsService {
     return this.mapToResponse(createdRequest);
   }
 
-  /** Filtra la lista: asesores solo ven asignaciones propias. */
+  /** Filtra la lista en base de datos para mostrar solo asignaciones propias. */
   async findAll(user: AppUser): Promise<RequestResponseDto[]> {
-    const result = await this.dao.findAll();
-    const visibleRequests =
+    const result =
       user.role === Role.ASESOR
-        ? result.filter((request) => this.isAssignedToUser(request, user))
-        : result;
+        ? await this.dao.findAllAssignedTo([
+            user.id,
+            ...(user.assignmentAliases ?? []),
+          ])
+        : await this.dao.findAll();
 
-    return visibleRequests.map((request) => this.mapToResponse(request));
+    return result.map((request) => this.mapToResponse(request));
   }
 
   /** Busca por ID y oculta solicitudes no asignadas al asesor solicitante. */
@@ -67,7 +81,7 @@ export class RequestsService {
     return this.mapToResponse(request);
   }
 
-  /** Actualiza el estado si la solicitud existe y pertenece al asesor indicado. */
+  /** Autoriza por asignación y valida el siguiente estado antes de persistirlo. */
   async updateStatus(
     id: number,
     dto: UpdateRequestStatusDto,
@@ -75,11 +89,24 @@ export class RequestsService {
   ): Promise<RequestResponseDto> {
     const request = await this.dao.findById(id);
 
-    if (
-      !request ||
-      (user.role === Role.ASESOR && !this.isAssignedToUser(request, user))
-    ) {
+    if (!request) {
       throw new NotFoundException(`Solicitud ${id} no encontrada`);
+    }
+
+    if (user.role === Role.ASESOR && !this.isAssignedToUser(request, user)) {
+      throw new ForbiddenException(
+        'No puedes cambiar el estado de una solicitud no asignada a ti',
+      );
+    }
+
+    if (
+      !ALLOWED_TRANSITIONS[request.status as RequestStatus]?.includes(
+        dto.estado,
+      )
+    ) {
+      throw new BadRequestException(
+        `Transición inválida: ${request.status} -> ${dto.estado}`,
+      );
     }
 
     const updatedRequest = await this.dao.update(request, {

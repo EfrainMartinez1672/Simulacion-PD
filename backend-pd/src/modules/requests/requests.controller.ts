@@ -103,9 +103,14 @@ export class RequestsController {
     description: 'Solicitud actualizada',
     type: RequestResponseDto,
   })
+  @ApiResponse({ status: 400, description: 'Transición de estado inválida' })
+  @ApiResponse({
+    status: 403,
+    description: 'Solicitud asignada a otro asesor',
+  })
   @ApiResponse({
     status: 404,
-    description: 'Solicitud no encontrada o no asignada al asesor',
+    description: 'Solicitud no encontrada',
   })
   updateStatus(
     @Param('id', ParseIntPipe) id: number,

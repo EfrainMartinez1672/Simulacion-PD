@@ -1,4 +1,8 @@
-import { NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { Role } from '../users/enums/role.enum';
 import { AppUser } from '../users/interfaces/app-user.interface';
 import { Requests } from './entities/requests.entity';
@@ -10,7 +14,10 @@ import { RequestsService } from './requests.service';
 describe('RequestsService', () => {
   let service: RequestsService;
   let dao: jest.Mocked<
-    Pick<RequestsDao, 'create' | 'update' | 'findById' | 'findAll'>
+    Pick<
+      RequestsDao,
+      'create' | 'update' | 'findById' | 'findAll' | 'findAllAssignedTo'
+    >
   >;
 
   /** Genera una entidad mínima para aislar las pruebas de permisos. */
@@ -31,8 +38,9 @@ describe('RequestsService', () => {
       update: jest.fn(),
       findById: jest.fn(),
       findAll: jest.fn(),
+      findAllAssignedTo: jest.fn(),
     };
-    service = new RequestsService(dao as RequestsDao);
+    service = new RequestsService(dao as unknown as RequestsDao);
   });
 
   it('should be defined', () => {
@@ -40,10 +48,9 @@ describe('RequestsService', () => {
   });
 
   it('returns only requests assigned to an advisor', async () => {
-    dao.findAll.mockResolvedValue([
+    dao.findAllAssignedTo.mockResolvedValue([
       assignedRequest(1, 'advisor1'),
       assignedRequest(2, 'asesor-01'),
-      assignedRequest(3, 'advisor2'),
     ]);
     const advisor: AppUser = {
       id: 'advisor1',
@@ -54,6 +61,10 @@ describe('RequestsService', () => {
     const result = await service.findAll(advisor);
 
     expect(result.map(({ id }) => id)).toEqual([1, 2]);
+    expect(dao.findAllAssignedTo).toHaveBeenCalledWith([
+      'advisor1',
+      'asesor-01',
+    ]);
   });
 
   it('allows supervisors to see all requests', async () => {
@@ -103,7 +114,7 @@ describe('RequestsService', () => {
 
     await expect(
       service.updateStatus(2, { estado: RequestStatus.EN_GESTION }, advisor),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(ForbiddenException);
     expect(dao.update).not.toHaveBeenCalled();
   });
 
@@ -125,5 +136,15 @@ describe('RequestsService', () => {
     );
 
     expect(result.estado).toBe(RequestStatus.EN_GESTION);
+  });
+
+  it('rejects jumping from pending directly to resolved', async () => {
+    dao.findById.mockResolvedValue(assignedRequest(1, 'advisor1'));
+    const advisor: AppUser = { id: 'advisor1', role: Role.ASESOR };
+
+    await expect(
+      service.updateStatus(1, { estado: RequestStatus.RESUELTA }, advisor),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(dao.update).not.toHaveBeenCalled();
   });
 });

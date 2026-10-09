@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { CreateRequestDto } from './dto/requests.dto';
 import { Requests } from './entities/requests.entity';
 import { RequestStatus } from './enums/request-status.enum';
@@ -40,5 +40,14 @@ export class RequestsDao {
   /** Recupera todas las solicitudes para que el servicio aplique permisos. */
   findAll(): Promise<Requests[]> {
     return this.dao.find();
+  }
+
+  /** Aplica el filtro de asignación en SQL para no cargar solicitudes ajenas. */
+  findAllAssignedTo(advisorIds: string[]): Promise<Requests[]> {
+    if (advisorIds.length === 0) {
+      return Promise.resolve([]);
+    }
+
+    return this.dao.find({ where: { advisor: In(advisorIds) } });
   }
 }

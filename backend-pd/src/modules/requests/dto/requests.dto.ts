@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsDefined,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { RequestStatus } from '../enums/request-status.enum';
 
 /** Campos admitidos para crear solicitudes; no permite definir estado desde el cliente. */
@@ -9,35 +15,39 @@ export class CreateRequestDto {
     example: 'cliente-001',
     description: 'Identificador del cliente',
   })
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
-  @Transform(({ value }) => String(value).trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   cliente: string;
 
   @ApiProperty({
     example: 'Necesita revisión de la nueva campaña',
     description: 'Descripción de la solicitud',
   })
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
   @MaxLength(1040)
-  @Transform(({ value }) => String(value).trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   descripcion: string;
 
   @ApiProperty({
     example: 'advisor1',
     description: 'ID del usuario asesor asignado (x-user)',
   })
+  @IsDefined()
   @IsString()
   @IsNotEmpty()
   @MaxLength(240)
-  @Transform(({ value }) => String(value).trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   asesor: string;
 }
 
 /** Cuerpo permitido para cambiar el estado de una solicitud existente. */
 export class UpdateRequestStatusDto {
   @ApiProperty({ enum: RequestStatus, description: 'Nuevo estado' })
+  @IsDefined()
   @IsEnum(RequestStatus)
   @Type(() => String)
   estado: RequestStatus;

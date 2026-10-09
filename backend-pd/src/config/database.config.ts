@@ -8,7 +8,10 @@ export default registerAs('database', (): TypeOrmModuleOptions => ({
   type: 'better-sqlite3',
   database: process.env.DB_PATH ?? './data/requests.sqlite',
   entities: [User, Requests],
-  synchronize: true,
+  synchronize:
+    process.env.DB_SYNCHRONIZE === 'true' ||
+    (process.env.DB_SYNCHRONIZE === undefined &&
+      process.env.NODE_ENV !== 'production'),
   logging: process.env.NODE_ENV !== 'production',
   autoLoadEntities: true,
 }));

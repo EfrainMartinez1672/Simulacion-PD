@@ -16,11 +16,14 @@ cd backend-pd
 npm install
 ```
 
-Configura las variables de entorno. Puedes copiar el ejemplo si aún no tienes un archivo `.env`:
+Configura las variables de entorno; conserva tu `.env` existente y copia el ejemplo solo si todavía no existe:
 
 ```bash
-cp .env.example .env
+test -f .env || cp .env.example .env
+mkdir -p data
 ```
+
+Edita `.env`. `API_KEYS` debe contener al menos dos claves distintas separadas por coma. Usa las claves `local-dev-*` solo localmente; para producción reemplázalas por secretos privados y aleatorios. `DB_PATH` indica el archivo SQLite. `DB_SYNCHRONIZE` puede ser `true` en desarrollo; por defecto el esquema se sincroniza en entornos no productivos y permanece desactivado por defecto en producción.
 
 Inicia la API en modo desarrollo:
 
@@ -28,7 +31,9 @@ Inicia la API en modo desarrollo:
 npm run start:dev
 ```
 
-La API queda disponible en `http://localhost:3000`. Para compilar y ejecutar en modo producción local:
+La API queda disponible en `http://localhost:3000`. El proyecto actualmente crea/actualiza el esquema de SQLite mediante TypeORM `synchronize` en desarrollo, no mediante migraciones versionadas. Antes de un despliegue productivo, crea migraciones y ejecuta la migración inicial/actualizaciones; producción deja `DB_SYNCHRONIZE` desactivado por defecto.
+
+Para compilar y ejecutar la build localmente:
 
 ```bash
 npm run build
@@ -61,7 +66,7 @@ docker compose down -v
 
 Con el backend iniciado, abre [http://localhost:3000/api/docs](http://localhost:3000/api/docs). Swagger permite probar los endpoints. En **Authorize** o en los headers de cada petición, proporciona:
 
-- `x-api-key`: una de las claves separadas por coma en `API_KEYS` del `.env` (por defecto, `clave-secreta-1`).
+- `x-api-key`: cualquiera de las claves separadas por coma en `API_KEYS` del `.env`.
 - `x-user`: identidad de prueba, por ejemplo `advisor1`, `advisor2`, `supervisor1` o `admin1`.
 
 Los asesores solo ven y pueden cambiar el estado de las solicitudes asignadas a ellos. Los IDs heredados `asesor-01` y `asesor-02` corresponden a `advisor1` y `advisor2`. Los supervisores y administradores pueden consultar todas las solicitudes.
@@ -75,7 +80,18 @@ Los asesores solo ven y pueden cambiar el estado de las solicitudes asignadas a 
 | `POST`  | `/solicitudes`             | Crear solicitud; su estado inicial siempre es `PENDIENTE` |
 | `PATCH` | `/solicitudes/{id}/estado` | Actualizar estado, respetando rol y asignación            |
 
-Estados permitidos: `PENDIENTE`, `EN_GESTION` y `RESUELTA`. El cuerpo de creación acepta `cliente`, `descripcion` y `asesor`; no se debe enviar `estado` al crear.
+Estados permitidos: `PENDIENTE`, `EN_GESTION` y `RESUELTA`; el flujo válido es `PENDIENTE → EN_GESTION → RESUELTA`, y `RESUELTA` es terminal. El cuerpo de creación acepta `cliente`, `descripcion` y `asesor`; no se debe enviar `estado` al crear.
+
+## Evidencias HTTP
+
+Con el backend en marcha y desde `backend-pd`:
+
+```bash
+chmod +x evidence.sh
+./evidence.sh
+```
+
+El script usa `curl`, lee las dos claves de `.env` y valida códigos HTTP y sobres JSON. Crea solicitudes fixture que permanecen en SQLite. Los comandos y respuestas esperadas de cada escenario están en [backend-pd/evidence.md](backend-pd/evidence.md).
 
 ## Pruebas y calidad
 
