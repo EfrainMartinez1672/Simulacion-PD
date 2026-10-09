@@ -4,20 +4,16 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
 } from 'typeorm';
 
-import { User } from '../../users/entities/users.entity';
-
+/** Entidad SQLite que representa una solicitud comercial almacenada. */
 @Entity('requests')
 export class Requests {
-  @PrimaryGeneratedColumn('identity')
+  @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'userId'})
-  client: User;
+  @Column({ type: 'varchar', length: 240 })
+  client: string;
 
   @Column({ type: 'varchar', length: 1040 })
   description: string;
@@ -25,12 +21,12 @@ export class Requests {
   @Column({ type: 'varchar', length: 240 })
   advisor: string;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', length: 32 })
   status: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'update_at' })
-  updateAt: Date;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }

@@ -1,25 +1,68 @@
-import { z } from 'zod';
-import { UserSummarySchema } from '../../users/dto/user.dto';
+import { ApiProperty } from '@nestjs/swagger';
+import { Transform, Type } from 'class-transformer';
+import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { RequestStatus } from '../enums/request-status.enum';
 
-/** Esquema de validación y contrato de entrada para crear una solicitud. */
-export const CreateRequestSchema = z.object({
-  clientId: z.number().int().positive(),
-  description: z.string().min(1).max(1040),
-  advisor: z.string().min(1).max(240),
-  status: z.string().default('pending'),
-});
+/** Campos admitidos para crear solicitudes; no permite definir estado desde el cliente. */
+export class CreateRequestDto {
+  @ApiProperty({
+    example: 'cliente-001',
+    description: 'Identificador del cliente',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @Transform(({ value }) => String(value).trim())
+  cliente: string;
 
-/** Contrato de respuesta de la solicitud con el cliente relacionado. */
-export const ResponseRequestSchema = z.object({
-  id: z.number().int().positive(),
-  client: UserSummarySchema,
-  description: z.string(),
-  advisor: z.string(),
-  status: z.string(),
-  createdAt: z.date(),
-  updateAt: z.date(),
-});
+  @ApiProperty({
+    example: 'Necesita revisión de la nueva campaña',
+    description: 'Descripción de la solicitud',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1040)
+  @Transform(({ value }) => String(value).trim())
+  descripcion: string;
 
-/** Tipo inferido del mismo esquema para compartirlo con servicios y controladores. */
-export type CreateRequestDto = z.infer<typeof CreateRequestSchema>;
-export type ResponseRequestDto = z.infer<typeof ResponseRequestSchema>;
+  @ApiProperty({
+    example: 'advisor1',
+    description: 'ID del usuario asesor asignado (x-user)',
+  })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(240)
+  @Transform(({ value }) => String(value).trim())
+  asesor: string;
+}
+
+/** Cuerpo permitido para cambiar el estado de una solicitud existente. */
+export class UpdateRequestStatusDto {
+  @ApiProperty({ enum: RequestStatus, description: 'Nuevo estado' })
+  @IsEnum(RequestStatus)
+  @Type(() => String)
+  estado: RequestStatus;
+}
+
+/** Forma pública de una solicitud devuelta por la API. */
+export class RequestResponseDto {
+  @ApiProperty({ example: 1 })
+  id: number;
+
+  @ApiProperty({ example: 'cliente-001' })
+  cliente: string;
+
+  @ApiProperty({ example: 'Necesita revisión de la nueva campaña' })
+  descripcion: string;
+
+  @ApiProperty({ example: 'asesor-01' })
+  asesor: string;
+
+  @ApiProperty({ enum: RequestStatus, example: RequestStatus.PENDIENTE })
+  estado: RequestStatus;
+
+  @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
+  creadaEn: Date;
+
+  @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
+  actualizadaEn: Date;
+}

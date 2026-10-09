@@ -3,24 +3,28 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateRequestDto } from './dto/requests.dto';
 import { Requests } from './entities/requests.entity';
+import { RequestStatus } from './enums/request-status.enum';
 
+/** Acceso a datos de solicitudes mediante el repositorio TypeORM. */
 @Injectable()
 export class RequestsDao {
   constructor(
     @InjectRepository(Requests) private readonly dao: Repository<Requests>,
   ) {}
 
+  /** Persiste una solicitud nueva asignándole siempre el estado PENDIENTE. */
   create(data: CreateRequestDto): Promise<Requests> {
     const request = this.dao.create({
-      description: data.description,
-      advisor: data.advisor,
-      status: data.status,
-      client: { id: data.clientId },
+      client: data.cliente,
+      description: data.descripcion,
+      advisor: data.asesor,
+      status: RequestStatus.PENDIENTE,
     });
 
     return this.dao.save(request);
   }
 
+  /** Guarda cambios permitidos en una entidad existente. */
   update(
     request: Requests,
     changes: Partial<Pick<Requests, 'status'>>,
@@ -28,15 +32,13 @@ export class RequestsDao {
     return this.dao.save(this.dao.merge(request, changes));
   }
 
+  /** Busca una solicitud por su clave primaria. */
   findById(id: number): Promise<Requests | null> {
-    return this.dao.findOne({where: { id }});
+    return this.dao.findOne({ where: { id } });
   }
 
+  /** Recupera todas las solicitudes para que el servicio aplique permisos. */
   findAll(): Promise<Requests[]> {
     return this.dao.find();
-  }
-
-  findByIdClient() {
-    return;
   }
 }

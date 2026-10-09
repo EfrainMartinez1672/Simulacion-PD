@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
+/** Pruebas unitarias del endpoint raíz de disponibilidad. */
 describe('AppController', () => {
   let appController: AppController;
 
