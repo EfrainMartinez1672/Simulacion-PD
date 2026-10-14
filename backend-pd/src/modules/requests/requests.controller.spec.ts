@@ -5,6 +5,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { UserGuard } from '../../common/guards/user.guard';
 import { Role } from '../users/enums/role.enum';
 import { UsersService } from '../users/users.service';
+import { QueryRequestsDto } from './dto/requests.dto';
 import { RequestsController } from './requests.controller';
 import { RequestsService } from './requests.service';
 
@@ -56,6 +57,23 @@ describe('RequestsController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('passes the query filters and authenticated user when listing requests', async () => {
+    const user = { id: 'supervisor1', role: Role.SUPERVISOR };
+    const query = { page: 2, limit: 5 } as QueryRequestsDto;
+
+    await controller.getAll(query, { user });
+
+    expect(requestsService.findAll).toHaveBeenCalledWith(user, query);
+  });
+
+  it('passes the request ID and authenticated user when fetching one request', async () => {
+    const user = { id: 'advisor1', role: Role.ASESOR };
+
+    await controller.getById(7, { user });
+
+    expect(requestsService.findById).toHaveBeenCalledWith(7, user);
   });
 
   it('passes the authenticated user when changing request status', async () => {

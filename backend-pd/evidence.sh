@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 BASE_URL="${BASE_URL:-http://localhost:3000}"
+
+# Ejecuta primero la validación unitaria del módulo de solicitudes antes de las pruebas HTTP.
+if ! npm test -- --runInBand; then
+  echo 'ERROR: las pruebas unitarias fallaron.' >&2
+  exit 1
+fi
 
 # Load local settings only when API_KEYS was not already provided by the caller.
 if [[ -z "${API_KEYS:-}" && -f .env ]]; then

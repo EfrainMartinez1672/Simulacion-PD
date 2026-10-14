@@ -8,6 +8,16 @@ export class UsersService {
   private readonly users: Record<string, AppUser> = {
     admin1: { id: 'admin1', role: Role.ADMIN },
     supervisor1: { id: 'supervisor1', role: Role.SUPERVISOR },
+    asesor01: {
+      id: 'asesor01',
+      role: Role.ASESOR,
+      assignmentAliases: ['advisor1'],
+    },
+    asesor02: {
+      id: 'asesor02',
+      role: Role.ASESOR,
+      assignmentAliases: ['advisor2'],
+    },
     advisor1: {
       id: 'advisor1',
       role: Role.ASESOR,
@@ -28,5 +38,11 @@ export class UsersService {
   /** Indica si una identidad existe en el catálogo configurado. */
   exists(id: string): boolean {
     return Boolean(this.users[id]);
+  }
+
+  /** Permite validar si el usuario objetivo es un asesor válido. */
+  findAssessorById(id: string): AppUser | undefined {
+    const user = this.users[id];
+    return user && user.role === Role.ASESOR ? user : undefined;
   }
 }

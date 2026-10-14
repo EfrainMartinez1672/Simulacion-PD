@@ -15,7 +15,7 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: false },
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
   app.useGlobalInterceptors(new ResponseInterceptor());

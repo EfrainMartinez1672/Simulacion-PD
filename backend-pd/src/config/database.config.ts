@@ -1,5 +1,6 @@
 import { registerAs } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { CommercialRequestHistory } from '../modules/requests/entities/commercial-request-history.entity';
 import { Requests } from '../modules/requests/entities/requests.entity';
 import { User } from '../modules/users/entities/users.entity';
 
@@ -7,7 +8,7 @@ import { User } from '../modules/users/entities/users.entity';
 export default registerAs('database', (): TypeOrmModuleOptions => ({
   type: 'better-sqlite3',
   database: process.env.DB_PATH ?? './data/requests.sqlite',
-  entities: [User, Requests],
+  entities: [User, Requests, CommercialRequestHistory],
   synchronize:
     process.env.DB_SYNCHRONIZE === 'true' ||
     (process.env.DB_SYNCHRONIZE === undefined &&

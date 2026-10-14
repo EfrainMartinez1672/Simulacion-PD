@@ -24,6 +24,22 @@ KEY1=local-dev-key-one
 KEY2=local-dev-key-two
 ```
 
+## Pruebas unitarias (antes de la evidencia HTTP)
+
+Desde `backend-pd` se ejecuta la validación de Jest del módulo antes de hacer peticiones hacia el servidor:
+
+```bash
+npm test -- --runInBand
+```
+
+La suite unitaria cubre reglas de negocio clave del módulo de solicitudes, por ejemplo:
+
+- listado paginado para asesor y supervisor,
+- creación con `asesor = null` cuando el actor es `admin` o `supervisor`,
+- reasignación exitosa con evento `ASIGNACION`,
+- rechazo de reasignación con `asesorId` inválido,
+- validación de transiciones de estado.
+
 ## 1. Petición sin `x-api-key` — HTTP 401
 
 ```bash
